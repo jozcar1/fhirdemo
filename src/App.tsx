@@ -3,9 +3,9 @@ import { useState, useEffect } from 'react';
 import { Container, Card, CardContent, Typography, Grid, List, ListItem, ListItemText, CircularProgress } from '@mui/material';
 import './App.css';
 
-import Client from 'fhirclient/lib/Client';
+import { client } from 'fhirclient';
 
-const client = new Client({
+const fhirClient = client({
   serverUrl: 'https://hapi.fhir.org/baseR4'
 });
 
@@ -89,7 +89,7 @@ export default function App() {
 
   const fetchPatients = async () => {
     try {
-      const response = await client.request(`Patient?_count=10`);
+      const response = await fhirClient.request(`Patient?_count=10`);
       setPatients(response.entry.map((e: any) => e.resource as Patient));
     } catch (error) {
       console.error('Error fetching patients:', error);
@@ -100,13 +100,13 @@ export default function App() {
     setLoading(true);
     try {
       // Fetch lab values
-      const labResponse = await client.request(`Observation?patient=${patientId}&category=laboratory`);
+      const labResponse = await fhirClient.request(`Observation?patient=${patientId}&category=laboratory`);
       const labObservations = labResponse.entry 
         ? labResponse.entry.map((e: any) => ({...e.resource, type: 'Lab'} as Observation))
         : [];
       
       // Fetch vital signs
-      const vitalsResponse = await client.request(`Observation?patient=${patientId}&category=vital-signs`);
+      const vitalsResponse = await fhirClient.request(`Observation?patient=${patientId}&category=vital-signs`);
       const vitalObservations = vitalsResponse.entry
         ? vitalsResponse.data.entry.map((e: any) => ({...e.resource, type: 'Vital Sign'} as Observation))
         : [];
