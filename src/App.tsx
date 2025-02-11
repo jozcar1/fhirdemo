@@ -3,26 +3,82 @@ import { useState, useEffect } from 'react';
 import { Container, Card, CardContent, Typography, Grid, List, ListItem, ListItemText, CircularProgress } from '@mui/material';
 import './App.css';
 
-interface Patient {
+import fhir from 'fhir.js';
+
+const client = fhir({
+  baseUrl: 'https://hapi.fhir.org/baseR4',
+  headers: {
+    'Accept': 'application/fhir+json',
+    'Content-Type': 'application/fhir+json'
+  }
+});
+
+interface FHIRResource {
+  resourceType: string;
   id: string;
+}
+
+interface Patient extends FHIRResource {
   name: [{
     given: string[];
     family: string;
+    text?: string;
+    use?: string;
   }];
   gender?: string;
   birthDate?: string;
+  address?: Array<{
+    line?: string[];
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    country?: string;
+  }>;
+  telecom?: Array<{
+    system?: string;
+    value?: string;
+    use?: string;
+  }>;
 }
 
-interface Observation {
+interface Observation extends FHIRResource {
+  status: string;
   code: {
+    coding?: Array<{
+      system?: string;
+      code?: string;
+      display?: string;
+    }>;
     text: string;
   };
   valueQuantity?: {
     value: number;
     unit: string;
+    system?: string;
+    code?: string;
   };
   valueString?: string;
+  valueCodeableConcept?: {
+    coding?: Array<{
+      system?: string;
+      code?: string;
+      display?: string;
+    }>;
+    text?: string;
+  };
   effectiveDateTime: string;
+  category?: Array<{
+    coding?: Array<{
+      system?: string;
+      code?: string;
+      display?: string;
+    }>;
+    text?: string;
+  }>;
+  subject?: {
+    reference: string;
+    type?: string;
+  };
 }
 
 export default function App() {
@@ -37,9 +93,13 @@ export default function App() {
 
   const fetchPatients = async () => {
     try {
-      const response = await fetch('https://hapi.fhir.org/baseR4/Patient?_count=10');
-      const data = await response.json();
-      setPatients(data.entry.map((e: any) => e.resource));
+      const response = await client.search({
+        type: 'Patient',
+        query: {
+          _count: 10
+        }
+      });
+      setPatients(response.data.entry.map((e: any) => e.resource as Patient));
     } catch (error) {
       console.error('Error fetching patients:', error);
     }
@@ -49,14 +109,28 @@ export default function App() {
     setLoading(true);
     try {
       // Fetch lab values
-      const labResponse = await fetch(`https://hapi.fhir.org/baseR4/Observation?patient=${patientId}&category=laboratory`);
-      const labData = await labResponse.json();
-      const labObservations = labData.entry ? labData.entry.map((e: any) => ({...e.resource, type: 'Lab'})) : [];
+      const labResponse = await client.search({
+        type: 'Observation',
+        query: {
+          patient: patientId,
+          category: 'laboratory'
+        }
+      });
+      const labObservations = labResponse.data.entry 
+        ? labResponse.data.entry.map((e: any) => ({...e.resource, type: 'Lab'} as Observation))
+        : [];
       
       // Fetch vital signs
-      const vitalsResponse = await fetch(`https://hapi.fhir.org/baseR4/Observation?patient=${patientId}&category=vital-signs`);
-      const vitalsData = await vitalsResponse.json();
-      const vitalObservations = vitalsData.entry ? vitalsData.entry.map((e: any) => ({...e.resource, type: 'Vital Sign'})) : [];
+      const vitalsResponse = await client.search({
+        type: 'Observation',
+        query: {
+          patient: patientId,
+          category: 'vital-signs'
+        }
+      });
+      const vitalObservations = vitalsResponse.data.entry
+        ? vitalsResponse.data.entry.map((e: any) => ({...e.resource, type: 'Vital Sign'} as Observation))
+        : [];
       
       // Combine both types of observations
       setObservations([...labObservations, ...vitalObservations]);
