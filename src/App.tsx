@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { Container, Card, CardContent, Typography, Grid, List, ListItem, ListItemText, CircularProgress } from '@mui/material';
+import { Container, Card, CardContent, Typography, Grid, List, ListItem, ListItemText, CircularProgress, TextField, Button, Box } from '@mui/material';
 import './App.css';
 
 import { client } from 'fhirclient';
@@ -82,6 +82,20 @@ export default function App() {
   const [observations, setObservations] = useState<Observation[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [searchMode, setSearchMode] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleSearch = async () => {
+    try {
+      setLoading(true);
+      const response = await fhirClient.request(`Patient?_count=10&_filter=name contains "${searchQuery}" or id contains "${searchQuery}"`);
+      setPatients(response.entry?.map((e: any) => e.resource as Patient) || []);
+    } catch (error) {
+      console.error('Error searching patients:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchPatients();
@@ -125,6 +139,33 @@ export default function App() {
       <Typography variant="h4" component="h1" gutterBottom>
         FHIR Patient Viewer
       </Typography>
+      <Box sx={{ mb: 3, display: 'flex', gap: 2 }}>
+        <TextField
+          label="Search by name or ID"
+          variant="outlined"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          size="small"
+          sx={{ flexGrow: 1 }}
+        />
+        <Button 
+          variant="contained" 
+          onClick={handleSearch}
+          disabled={!searchQuery}
+        >
+          Search
+        </Button>
+        <Button 
+          variant="outlined" 
+          onClick={() => {
+            setSearchQuery('');
+            setSearchMode(false);
+            fetchPatients();
+          }}
+        >
+          Clear
+        </Button>
+      </Box>
       <Grid container spacing={3}>
         <Grid item xs={12} md={6}>
           <Typography variant="h5" gutterBottom>
