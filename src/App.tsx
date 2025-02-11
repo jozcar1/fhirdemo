@@ -88,35 +88,82 @@ export default function App() {
           </List>
         </Grid>
         <Grid item xs={12} md={6}>
-          <Typography variant="h5" gutterBottom>
-            Lab Values
-          </Typography>
-          {loading ? (
-            <CircularProgress />
-          ) : selectedPatient ? (
-            observations.length > 0 ? (
-              observations.map((obs, index) => (
-                <Card key={index} sx={{ mb: 2 }}>
-                  <CardContent>
-                    <Typography variant="h6">{obs.code.text}</Typography>
-                    <Typography>
-                      Value: {obs.valueQuantity 
-                        ? `${obs.valueQuantity.value} ${obs.valueQuantity.unit}`
-                        : obs.valueString || 'N/A'
-                      }
-                    </Typography>
-                    <Typography variant="caption">
-                      Date: {new Date(obs.effectiveDateTime).toLocaleDateString()}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              ))
-            ) : (
-              <Typography>No observations found for this patient</Typography>
-            )
-          ) : (
-            <Typography>Select a patient to view their lab values</Typography>
-          )}
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <Card sx={{ bgcolor: '#e3f2fd', mb: 2 }}>
+                <CardContent>
+                  <Typography variant="h5" gutterBottom>
+                    Laboratory Values
+                  </Typography>
+                  {loading ? (
+                    <CircularProgress />
+                  ) : selectedPatient ? (
+                    observations.filter(obs => obs.type === 'Lab').length > 0 ? (
+                      observations
+                        .filter(obs => obs.type === 'Lab')
+                        .map((obs, index) => (
+                          <Card key={index} sx={{ mb: 1, bgcolor: 'white' }}>
+                            <CardContent>
+                              <Typography variant="h6">{obs.code.text}</Typography>
+                              <Typography>
+                                Value: {obs.valueQuantity 
+                                  ? `${obs.valueQuantity.value} ${obs.valueQuantity.unit}`
+                                  : obs.valueString || 'N/A'
+                                }
+                              </Typography>
+                              <Typography variant="caption">
+                                Date: {new Date(obs.effectiveDateTime).toLocaleDateString()}
+                              </Typography>
+                            </CardContent>
+                          </Card>
+                        ))
+                    ) : (
+                      <Typography>No lab values found</Typography>
+                    )
+                  ) : (
+                    <Typography>Select a patient to view their lab values</Typography>
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12}>
+              <Card sx={{ bgcolor: '#f3e5f5', mb: 2 }}>
+                <CardContent>
+                  <Typography variant="h5" gutterBottom>
+                    Vital Signs
+                  </Typography>
+                  {loading ? (
+                    <CircularProgress />
+                  ) : selectedPatient ? (
+                    observations.filter(obs => obs.type === 'Vital Sign').length > 0 ? (
+                      observations
+                        .filter(obs => obs.type === 'Vital Sign')
+                        .map((obs, index) => (
+                          <Card key={index} sx={{ mb: 1, bgcolor: 'white' }}>
+                            <CardContent>
+                              <Typography variant="h6">{obs.code.text}</Typography>
+                              <Typography>
+                                Value: {obs.valueQuantity 
+                                  ? `${obs.valueQuantity.value} ${obs.valueQuantity.unit}`
+                                  : obs.valueString || 'N/A'
+                                }
+                              </Typography>
+                              <Typography variant="caption">
+                                Date: {new Date(obs.effectiveDateTime).toLocaleDateString()}
+                              </Typography>
+                            </CardContent>
+                          </Card>
+                        ))
+                    ) : (
+                      <Typography>No vital signs found</Typography>
+                    )
+                  ) : (
+                    <Typography>Select a patient to view their vital signs</Typography>
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
         </Grid>
       </Grid>
     </Container>
