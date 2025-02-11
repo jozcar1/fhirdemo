@@ -48,9 +48,18 @@ export default function App() {
   const fetchObservations = async (patientId: string) => {
     setLoading(true);
     try {
-      const response = await fetch(`https://hapi.fhir.org/baseR4/Observation?patient=${patientId}`);
-      const data = await response.json();
-      setObservations(data.entry ? data.entry.map((e: any) => e.resource) : []);
+      // Fetch lab values
+      const labResponse = await fetch(`https://hapi.fhir.org/baseR4/Observation?patient=${patientId}&category=laboratory`);
+      const labData = await labResponse.json();
+      const labObservations = labData.entry ? labData.entry.map((e: any) => ({...e.resource, type: 'Lab'})) : [];
+      
+      // Fetch vital signs
+      const vitalsResponse = await fetch(`https://hapi.fhir.org/baseR4/Observation?patient=${patientId}&category=vital-signs`);
+      const vitalsData = await vitalsResponse.json();
+      const vitalObservations = vitalsData.entry ? vitalsData.entry.map((e: any) => ({...e.resource, type: 'Vital Sign'})) : [];
+      
+      // Combine both types of observations
+      setObservations([...labObservations, ...vitalObservations]);
       setSelectedPatient(patientId);
     } catch (error) {
       console.error('Error fetching observations:', error);
