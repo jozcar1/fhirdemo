@@ -3,14 +3,10 @@ import { useState, useEffect } from 'react';
 import { Container, Card, CardContent, Typography, Grid, List, ListItem, ListItemText, CircularProgress } from '@mui/material';
 import './App.css';
 
-import fhir from 'fhir.js';
+import FHIR from 'fhirclient';
 
-const client = fhir({
-  baseUrl: 'https://hapi.fhir.org/baseR4',
-  headers: {
-    'Accept': 'application/fhir+json',
-    'Content-Type': 'application/fhir+json'
-  }
+const client = FHIR.client({
+  serverUrl: 'https://hapi.fhir.org/baseR4'
 });
 
 interface FHIRResource {
@@ -93,13 +89,8 @@ export default function App() {
 
   const fetchPatients = async () => {
     try {
-      const response = await client.search({
-        type: 'Patient',
-        query: {
-          _count: 10
-        }
-      });
-      setPatients(response.data.entry.map((e: any) => e.resource as Patient));
+      const response = await client.request(`Patient?_count=10`);
+      setPatients(response.entry.map((e: any) => e.resource as Patient));
     } catch (error) {
       console.error('Error fetching patients:', error);
     }
@@ -109,26 +100,14 @@ export default function App() {
     setLoading(true);
     try {
       // Fetch lab values
-      const labResponse = await client.search({
-        type: 'Observation',
-        query: {
-          patient: patientId,
-          category: 'laboratory'
-        }
-      });
-      const labObservations = labResponse.data.entry 
-        ? labResponse.data.entry.map((e: any) => ({...e.resource, type: 'Lab'} as Observation))
+      const labResponse = await client.request(`Observation?patient=${patientId}&category=laboratory`);
+      const labObservations = labResponse.entry 
+        ? labResponse.entry.map((e: any) => ({...e.resource, type: 'Lab'} as Observation))
         : [];
       
       // Fetch vital signs
-      const vitalsResponse = await client.search({
-        type: 'Observation',
-        query: {
-          patient: patientId,
-          category: 'vital-signs'
-        }
-      });
-      const vitalObservations = vitalsResponse.data.entry
+      const vitalsResponse = await client.request(`Observation?patient=${patientId}&category=vital-signs`);
+      const vitalObservations = vitalsResponse.entry
         ? vitalsResponse.data.entry.map((e: any) => ({...e.resource, type: 'Vital Sign'} as Observation))
         : [];
       
