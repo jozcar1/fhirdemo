@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Container, Card, CardContent, Typography, Grid, List, ListItem, ListItemText, CircularProgress } from '@mui/material';
 import './App.css';
 
-import FHIR from 'fhirclient';
+import FHIR from 'fhirclient/lib/client';
 
 const client = FHIR.client({
   serverUrl: 'https://hapi.fhir.org/baseR4'
