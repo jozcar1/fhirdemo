@@ -88,7 +88,7 @@ export default function App() {
   const handleSearch = async () => {
     try {
       setLoading(true);
-      const response = await fhirClient.request(`Patient?_count=10&_filter=name contains "${searchQuery}" or id contains "${searchQuery}"`);
+      const response = await fhirClient.request(`Patient?_count=10&name=${searchQuery}&_id=${searchQuery}`);
       setPatients(response.entry?.map((e: any) => e.resource as Patient) || []);
     } catch (error) {
       console.error('Error searching patients:', error);
