@@ -1,13 +1,12 @@
-
-import { useState, useEffect } from 'react';
-import { Container, Card, CardContent, Typography, Grid, List, ListItem, ListItemText, CircularProgress, TextField, Button, Box } from '@mui/material';
+import { useState } from 'react';
+import {
+  Container, Card, CardContent, Typography, Grid, List, ListItem, ListItemText,
+  CircularProgress, TextField, Button, Box
+} from '@mui/material';
 import './App.css';
-
 import { client } from 'fhirclient';
 
-const fhirClient = client({
-  serverUrl: 'https://hapi.fhir.org/baseR4'
-});
+const fhirClient = client({ serverUrl: 'https://server.fire.ly' });
 
 interface FHIRResource {
   resourceType: string;
@@ -15,74 +14,39 @@ interface FHIRResource {
 }
 
 interface Patient extends FHIRResource {
-  name: [{
-    given: string[];
-    family: string;
-    text?: string;
-    use?: string;
-  }];
+  name: Array<{ given?: string[]; family?: string }>;
   gender?: string;
   birthDate?: string;
-  address?: Array<{
-    line?: string[];
-    city?: string;
-    state?: string;
-    postalCode?: string;
-    country?: string;
-  }>;
-  telecom?: Array<{
-    system?: string;
-    value?: string;
-    use?: string;
-  }>;
 }
 
 interface Observation extends FHIRResource {
-  status: string;
-  code: {
-    coding?: Array<{
-      system?: string;
-      code?: string;
-      display?: string;
-    }>;
-    text: string;
-  };
-  valueQuantity?: {
-    value: number;
-    unit: string;
-    system?: string;
-    code?: string;
-  };
+  code: { text?: string; };
+  valueQuantity?: { value?: number; unit?: string };
   valueString?: string;
-  valueCodeableConcept?: {
-    coding?: Array<{
-      system?: string;
-      code?: string;
-      display?: string;
-    }>;
-    text?: string;
-  };
   effectiveDateTime: string;
-  category?: Array<{
-    coding?: Array<{
-      system?: string;
-      code?: string;
-      display?: string;
-    }>;
-    text?: string;
-  }>;
-  subject?: {
-    reference: string;
-    type?: string;
-  };
+  //type?: 'Lab' | 'Vital Signs';
 }
+
+interface MedicationRequest extends FHIRResource {
+  medicationCodeableConcept?: { text?: string };
+  authoredOn: string;
+  dosageInstruction?: Array<{
+    doseAndRate?: Array<{
+      doseQuantity?: { value?: string; unit?: string }
+    }>
+  }>;
+  //type?: 'MedicationRequest';
+}
+
+type ObservationWithType = Observation & { type: 'Lab' | 'Vital Signs' };
+type MedicationRequestWithType = MedicationRequest & { type: 'MedicationRequest' };
 
 export default function App() {
   const [patients, setPatients] = useState<Patient[]>([]);
-  const [observations, setObservations] = useState<Observation[]>([]);
+  const [observations, setObservations] = useState<ObservationWithType[]>([]);
+  const [medications, setMedications] = useState<MedicationRequestWithType[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [searchMode, setSearchMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   const handleSearch = async () => {
@@ -90,185 +54,142 @@ export default function App() {
       setLoading(true);
       const isLettersOnly = /^[A-Za-z\s]+$/.test(searchQuery);
       const searchParam = isLettersOnly ? `name=${searchQuery}` : `_id=${searchQuery}`;
-      const response = await fhirClient.request(`Patient?_count=10&${searchParam}`);
-      setPatients(response.entry?.map((e: any) => e.resource as Patient) || []);
-    } catch (error) {
-      console.error('Error searching patients:', error);
+      const res = await fhirClient.request(`Patient?_count=10&${searchParam}`);
+      setPatients(res.entry?.map((e: any) => e.resource) || []);
+    } catch (err) {
+      console.error('Search error:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchPatients();
-  }, []);
-
-  const fetchPatients = async () => {
+  const fetchPatientData = async (patientId: string) => {
+    setLoading(true);
     try {
-      const response = await fhirClient.request(`Patient?_count=10`);
-      setPatients(response.entry.map((e: any) => e.resource as Patient));
-    } catch (error) {
-      console.error('Error fetching patients:', error);
+      const [lab, vitals, meds] = await Promise.all([
+        fhirClient.request(`Observation?subject=Patient/${patientId}&category=laboratory`),
+        fhirClient.request(`Observation?subject=Patient/${patientId}&category=vital-signs`),
+        fhirClient.request(`MedicationRequest?subject=Patient/${patientId}`)
+      ]);
+
+      const labs: ObservationWithType[]  = lab.entry?.map((e: any) => ({ ...e.resource, type: 'Lab' })) || [];
+      const vitalsData:  ObservationWithType[]  = vitals.entry?.map((e: any) => ({ ...e.resource, type: 'Vital Signs' })) || [];
+      const medsData: MedicationRequestWithType[] = meds.entry?.map((e: any) => ({ ...e.resource, type: 'MedicationRequest' })) || [];
+
+      setObservations([...labs, ...vitalsData]);
+      setMedications(medsData);
+      setSelectedPatient(patientId);
+    } catch (err) {
+      console.error('Error fetching data:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const fetchObservations = async (patientId: string) => {
-    setLoading(true);
-    try {
-      // Fetch lab values
-      const labResponse = await fhirClient.request(`Observation?patient=${patientId}&category=laboratory`);
-      const labObservations = labResponse.entry 
-        ? labResponse.entry.map((e: any) => ({...e.resource, type: 'Lab'} as Observation))
-        : [];
-      
-      // Fetch vital signs
-      const vitalsResponse = await fhirClient.request(`Observation?patient=${patientId}&category=vital-signs`);
-      const vitalObservations = vitalsResponse.entry
-        ? vitalsResponse.data.entry.map((e: any) => ({...e.resource, type: 'Vital Sign'} as Observation))
-        : [];
-      
-      // Combine both types of observations
-      setObservations([...labObservations, ...vitalObservations]);
-      setSelectedPatient(patientId);
-    } catch (error) {
-      console.error('Error fetching observations:', error);
-    }
-    setLoading(false);
+  const renderObservationCards = (type: 'Lab' | 'Vital Signs') => {
+    const filtered = observations.filter(obs => obs.type === type);
+    if (!selectedPatient) return <Typography>Select a patient to view {type.toLowerCase()}</Typography>;
+    if (loading) return <CircularProgress />;
+    if (!filtered.length) return <Typography>No {type.toLowerCase()} found</Typography>;
+
+    return filtered.map((obs, i) => (
+      <Card key={i} sx={{ mb: 1, bgcolor: 'white' }}>
+        <CardContent>
+          <Typography variant="h6">{obs.code.text || 'Unnamed'}</Typography>
+          <Typography>
+            Value: {obs.valueQuantity ? `${obs.valueQuantity.value} ${obs.valueQuantity.unit}` : obs.valueString ?? 'N/A'}
+          </Typography>
+          <Typography variant="caption">
+            Date: {new Date(obs.effectiveDateTime).toLocaleDateString()}
+          </Typography>
+        </CardContent>
+      </Card>
+    ));
+  };
+
+  const renderMedicationCards = () => {
+    if (!selectedPatient) return <Typography>Select a patient to view medications</Typography>;
+    if (loading) return <CircularProgress />;
+    if (!medications.length) return <Typography>No medications found</Typography>;
+
+    return medications.map((med, i) => (
+      <Card key={i} sx={{ mb: 1, bgcolor: 'white' }}>
+        <CardContent>
+          <Typography variant="h6">{med.medicationCodeableConcept?.text ?? 'Unnamed Medication'}</Typography>
+          <Typography>
+            Dose: {med.dosageInstruction?.[0]?.doseAndRate?.[0]?.doseQuantity
+              ? `${med.dosageInstruction[0].doseAndRate[0].doseQuantity.value} ${med.dosageInstruction[0].doseAndRate[0].doseQuantity.unit}`
+              : 'N/A'}
+          </Typography>
+          <Typography variant="caption">
+            Date: {new Date(med.authoredOn).toLocaleDateString()}
+          </Typography>
+        </CardContent>
+      </Card>
+    ));
   };
 
   return (
     <Container>
-      <Typography variant="h4" component="h1" gutterBottom>
-        FHIR Patient Viewer
-      </Typography>
+      <Typography variant="h4" gutterBottom>FHIR Patient Viewer</Typography>
+
       <Box sx={{ mb: 3, display: 'flex', gap: 2 }}>
         <TextField
           label="Search by name or ID"
           variant="outlined"
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={e => setSearchQuery(e.target.value)}
           size="small"
-          sx={{ flexGrow: 1 }}
+          fullWidth
         />
-        <Button 
-          variant="contained" 
-          onClick={handleSearch}
-          disabled={!searchQuery}
-        >
-          Search
-        </Button>
-        <Button 
-          variant="outlined" 
-          onClick={() => {
-            setSearchQuery('');
-            setSearchMode(false);
-            fetchPatients();
-          }}
-        >
-          Clear
-        </Button>
+        <Button variant="contained" onClick={handleSearch} disabled={!searchQuery}>Search</Button>
+        <Button variant="outlined" onClick={() => { setSearchQuery(''); setPatients([]); }}>Clear</Button>
       </Box>
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={6}>
-          <Typography variant="h5" gutterBottom>
-            Patients
-          </Typography>
-          <List>
-            {patients.map((patient) => (
-              <ListItem 
-                key={patient.id}
-                onClick={() => fetchObservations(patient.id)}
-                sx={{
-                  cursor: 'pointer',
-                  bgcolor: selectedPatient === patient.id ? 'action.selected' : 'inherit',
-                  '&:hover': { bgcolor: 'action.hover' }
-                }}
-              >
-                <ListItemText
-                  primary={`${patient.name[0]?.given?.join(' ')} ${patient.name[0]?.family}`}
-                  secondary={`Gender: ${patient.gender || 'N/A'} | DOB: ${patient.birthDate || 'N/A'}`}
-                />
-              </ListItem>
-            ))}
-          </List>
+
+      <Typography variant="h5" gutterBottom>Patients</Typography>
+      <List>
+        {patients.map(p => (
+          <ListItem
+            key={p.id}
+            onClick={() => fetchPatientData(p.id)}
+            sx={{
+              cursor: 'pointer',
+              bgcolor: selectedPatient === p.id ? 'action.selected' : 'inherit',
+              '&:hover': { bgcolor: 'action.hover' }
+            }}
+          >
+            <ListItemText
+              primary={`${p.name?.[0]?.given?.join(' ') ?? ''} ${p.name?.[0]?.family ?? ''}`}
+              secondary={`Gender: ${p.gender ?? 'N/A'} | DOB: ${p.birthDate ?? 'N/A'}`}
+            />
+          </ListItem>
+        ))}
+      </List>
+
+      <Grid container spacing={2}>
+        <Grid item xs={12} md={4}>
+          <Card sx={{ bgcolor: '#e3f2fd' }}>
+            <CardContent>
+              <Typography variant="h5">Lab Results</Typography>
+              {renderObservationCards('Lab')}
+            </CardContent>
+          </Card>
         </Grid>
-        <Grid item xs={12} md={6}>
-          <Grid container spacing={2}>
-            <Grid item xs={12}>
-              <Card sx={{ bgcolor: '#e3f2fd', mb: 2 }}>
-                <CardContent>
-                  <Typography variant="h5" gutterBottom>
-                    Laboratory Values
-                  </Typography>
-                  {loading ? (
-                    <CircularProgress />
-                  ) : selectedPatient ? (
-                    observations.filter(obs => obs.type === 'Lab').length > 0 ? (
-                      observations
-                        .filter(obs => obs.type === 'Lab')
-                        .map((obs, index) => (
-                          <Card key={index} sx={{ mb: 1, bgcolor: 'white' }}>
-                            <CardContent>
-                              <Typography variant="h6">{obs.code.text}</Typography>
-                              <Typography>
-                                Value: {obs.valueQuantity 
-                                  ? `${obs.valueQuantity.value} ${obs.valueQuantity.unit}`
-                                  : obs.valueString || 'N/A'
-                                }
-                              </Typography>
-                              <Typography variant="caption">
-                                Date: {new Date(obs.effectiveDateTime).toLocaleDateString()}
-                              </Typography>
-                            </CardContent>
-                          </Card>
-                        ))
-                    ) : (
-                      <Typography>No lab values found</Typography>
-                    )
-                  ) : (
-                    <Typography>Select a patient to view their lab values</Typography>
-                  )}
-                </CardContent>
-              </Card>
-            </Grid>
-            <Grid item xs={12}>
-              <Card sx={{ bgcolor: '#f3e5f5', mb: 2 }}>
-                <CardContent>
-                  <Typography variant="h5" gutterBottom>
-                    Vital Signs
-                  </Typography>
-                  {loading ? (
-                    <CircularProgress />
-                  ) : selectedPatient ? (
-                    observations.filter(obs => obs.type === 'Vital Sign').length > 0 ? (
-                      observations
-                        .filter(obs => obs.type === 'Vital Sign')
-                        .map((obs, index) => (
-                          <Card key={index} sx={{ mb: 1, bgcolor: 'white' }}>
-                            <CardContent>
-                              <Typography variant="h6">{obs.code.text}</Typography>
-                              <Typography>
-                                Value: {obs.valueQuantity 
-                                  ? `${obs.valueQuantity.value} ${obs.valueQuantity.unit}`
-                                  : obs.valueString || 'N/A'
-                                }
-                              </Typography>
-                              <Typography variant="caption">
-                                Date: {new Date(obs.effectiveDateTime).toLocaleDateString()}
-                              </Typography>
-                            </CardContent>
-                          </Card>
-                        ))
-                    ) : (
-                      <Typography>No vital signs found</Typography>
-                    )
-                  ) : (
-                    <Typography>Select a patient to view their vital signs</Typography>
-                  )}
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
+        <Grid item xs={12} md={4}>
+          <Card sx={{ bgcolor: '#f3e5f5' }}>
+            <CardContent>
+              <Typography variant="h5">Vital Signs</Typography>
+              {renderObservationCards('Vital Signs')}
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <Card sx={{ bgcolor: '#dcedc8' }}>
+            <CardContent>
+              <Typography variant="h5">Medications</Typography>
+              {renderMedicationCards()}
+            </CardContent>
+          </Card>
         </Grid>
       </Grid>
     </Container>
