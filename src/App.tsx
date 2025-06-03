@@ -186,7 +186,7 @@ export default function App() {
                      Gender: {p.gender ?? 'N/A'} | DOB: {p.birthDate ?? 'N/A'}
                   </Typography>
                    <Typography variant="body2">
-                     Email: {p.telecom[1].value ?? 'N/A'}
+                     Email: {p.telecom?.[1]?.value ?? 'N/A'}
                   </Typography>
                 </>
 
