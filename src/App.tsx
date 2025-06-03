@@ -5,18 +5,31 @@ import {
 } from '@mui/material';
 import './App.css';
 import { client } from 'fhirclient';
+//https://server.fire.ly'
 
-const fhirClient = client({ serverUrl: 'https://server.fire.ly' });
+const fhirClient = client({ serverUrl: 'https://apim-healthtech-i42ej.azure-api.net' });
 
 interface FHIRResource {
   resourceType: string;
   id: string;
 }
 
+interface ContactPoint {
+  system?: 'phone' | 'fax' | 'email' | 'pager' | 'url';
+  value?: string;
+  use?: 'home' | 'work' | 'temp';
+  rank?: number;
+  period?: {
+    start?: string;
+    end?: string;
+  }
+}
+
 interface Patient extends FHIRResource {
   name: Array<{ given?: string[]; family?: string }>;
   gender?: string;
   birthDate?: string;
+  telecom?: ContactPoint[]
 }
 
 interface Observation extends FHIRResource {
@@ -24,7 +37,7 @@ interface Observation extends FHIRResource {
   valueQuantity?: { value?: number; unit?: string };
   valueString?: string;
   effectiveDateTime: string;
-  //type?: 'Lab' | 'Vital Signs';
+
 }
 
 interface MedicationRequest extends FHIRResource {
@@ -35,7 +48,7 @@ interface MedicationRequest extends FHIRResource {
       doseQuantity?: { value?: string; unit?: string }
     }>
   }>;
-  //type?: 'MedicationRequest';
+
 }
 
 type ObservationWithType = Observation & { type: 'Lab' | 'Vital Signs' };
@@ -53,7 +66,11 @@ export default function App() {
     try {
       setLoading(true);
       const isLettersOnly = /^[A-Za-z\s]+$/.test(searchQuery);
-      const searchParam = isLettersOnly ? `name=${searchQuery}` : `_id=${searchQuery}`;
+      const parts = searchQuery.trim().split(/\s+/);
+      const firstName = parts[0];
+      const lastName = parts[1];
+      const searchParam = isLettersOnly ? `given=${firstName}&family=${lastName}` : `_id=${searchQuery}`;
+
       const res = await fhirClient.request(`Patient?_count=10&${searchParam}`);
       setPatients(res.entry?.map((e: any) => e.resource) || []);
     } catch (err) {
@@ -66,17 +83,17 @@ export default function App() {
   const fetchPatientData = async (patientId: string) => {
     setLoading(true);
     try {
-      const [lab, vitals, meds] = await Promise.all([
-        fhirClient.request(`Observation?subject=Patient/${patientId}&category=laboratory`),
+      const [vitals, lab, meds] = await Promise.all([
         fhirClient.request(`Observation?subject=Patient/${patientId}&category=vital-signs`),
+        fhirClient.request(`Observation?subject=Patient/${patientId}&category=laboratory`),
         fhirClient.request(`MedicationRequest?subject=Patient/${patientId}`)
       ]);
 
-      const labs: ObservationWithType[]  = lab.entry?.map((e: any) => ({ ...e.resource, type: 'Lab' })) || [];
-      const vitalsData:  ObservationWithType[]  = vitals.entry?.map((e: any) => ({ ...e.resource, type: 'Vital Signs' })) || [];
+      const labs: ObservationWithType[] = lab.entry?.map((e: any) => ({ ...e.resource, type: 'Lab' })) || [];
+      const vitalsData: ObservationWithType[] = vitals.entry?.map((e: any) => ({ ...e.resource, type: 'Vital Signs' })) || [];
       const medsData: MedicationRequestWithType[] = meds.entry?.map((e: any) => ({ ...e.resource, type: 'MedicationRequest' })) || [];
 
-      setObservations([...labs, ...vitalsData]);
+      setObservations([...vitalsData, ...labs]);
       setMedications(medsData);
       setSelectedPatient(patientId);
     } catch (err) {
@@ -130,10 +147,12 @@ export default function App() {
   };
 
   return (
-    <Container>
-      <Typography variant="h4" gutterBottom>FHIR Patient Viewer</Typography>
-
-      <Box sx={{ mb: 3, display: 'flex', gap: 2 }}>
+    <Container sx={{marginTop:-2}}>
+     <Box sx={{ width: '100%', backgroundColor: '#0073e0' ,padding: 3, color:'white',
+      borderRadius: 1, margin:-3}}>
+       <Typography variant="h4" gutterBottom>FHIR Patient Viewer</Typography>
+      </Box>
+      <Box sx={{ mb: 3, display: 'flex', gap: 2, paddingTop:5 }}>
         <TextField
           label="Search by name or ID"
           variant="outlined"
@@ -147,7 +166,7 @@ export default function App() {
       </Box>
 
       <Typography variant="h5" gutterBottom>Patients</Typography>
-      <List>
+      <List sx={{ backgroundColor: '#78E2DA', color: '#002569' }}>
         {patients.map(p => (
           <ListItem
             key={p.id}
@@ -155,28 +174,33 @@ export default function App() {
             sx={{
               cursor: 'pointer',
               bgcolor: selectedPatient === p.id ? 'action.selected' : 'inherit',
-              '&:hover': { bgcolor: 'action.hover' }
+              '&:hover': { bgcolor:  '#78E2DA'}
             }}
           >
-            <ListItemText
+            <ListItemText 
+              
               primary={`${p.name?.[0]?.given?.join(' ') ?? ''} ${p.name?.[0]?.family ?? ''}`}
-              secondary={`Gender: ${p.gender ?? 'N/A'} | DOB: ${p.birthDate ?? 'N/A'}`}
+              secondary={
+                <>
+                  <Typography variant="body2">
+                     Gender: {p.gender ?? 'N/A'} | DOB: {p.birthDate ?? 'N/A'}
+                  </Typography>
+                   <Typography variant="body2">
+                     Email: {p.telecom[1].value ?? 'N/A'}
+                  </Typography>
+                </>
+
+
+              }
+
             />
           </ListItem>
         ))}
       </List>
 
-      <Grid container spacing={2}>
+      <Grid container spacing={2} sx={{marginTop:2}}>
         <Grid item xs={12} md={4}>
-          <Card sx={{ bgcolor: '#e3f2fd' }}>
-            <CardContent>
-              <Typography variant="h5">Lab Results</Typography>
-              {renderObservationCards('Lab')}
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={4}>
-          <Card sx={{ bgcolor: '#f3e5f5' }}>
+          <Card sx={{ bgcolor: '#308229' }}>
             <CardContent>
               <Typography variant="h5">Vital Signs</Typography>
               {renderObservationCards('Vital Signs')}
@@ -184,7 +208,15 @@ export default function App() {
           </Card>
         </Grid>
         <Grid item xs={12} md={4}>
-          <Card sx={{ bgcolor: '#dcedc8' }}>
+          <Card sx={{ bgcolor: '#e65722' }}>
+            <CardContent>
+              <Typography variant="h5">Lab Results</Typography>
+              {renderObservationCards('Lab')}
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <Card sx={{ bgcolor: '#C28110' }}>
             <CardContent>
               <Typography variant="h5">Medications</Typography>
               {renderMedicationCards()}
