@@ -5,51 +5,13 @@ import {
 } from '@mui/material';
 import './App.css';
 import { client } from 'fhirclient';
-//https://server.fire.ly'
+import { Patient } from './types/patient/patient';
+import { Observation } from './types/observation/observation';
+import { MedicationRequest } from './types/medicationRequest/medicationRequest';
 
-const fhirClient = client({ serverUrl: 'https://apim-healthtech-i42ej.azure-api.net' });
 
-interface FHIRResource {
-  resourceType: string;
-  id: string;
-}
+const fhirClient = client({ serverUrl: 'https://server.fire.ly' });
 
-interface ContactPoint {
-  system?: 'phone' | 'fax' | 'email' | 'pager' | 'url';
-  value?: string;
-  use?: 'home' | 'work' | 'temp';
-  rank?: number;
-  period?: {
-    start?: string;
-    end?: string;
-  }
-}
-
-interface Patient extends FHIRResource {
-  name: Array<{ given?: string[]; family?: string }>;
-  gender?: string;
-  birthDate?: string;
-  telecom?: ContactPoint[]
-}
-
-interface Observation extends FHIRResource {
-  code: { text?: string; };
-  valueQuantity?: { value?: number; unit?: string };
-  valueString?: string;
-  effectiveDateTime: string;
-
-}
-
-interface MedicationRequest extends FHIRResource {
-  medicationCodeableConcept?: { text?: string };
-  authoredOn: string;
-  dosageInstruction?: Array<{
-    doseAndRate?: Array<{
-      doseQuantity?: { value?: string; unit?: string }
-    }>
-  }>;
-
-}
 
 type ObservationWithType = Observation & { type: 'Lab' | 'Vital Signs' };
 type MedicationRequestWithType = MedicationRequest & { type: 'MedicationRequest' };
@@ -112,13 +74,33 @@ export default function App() {
     return filtered.map((obs, i) => (
       <Card key={i} sx={{ mb: 1, bgcolor: 'white' }}>
         <CardContent>
+
           <Typography variant="h6">{obs.code.text || 'Unnamed'}</Typography>
-          <Typography>
-            Value: {obs.valueQuantity ? `${obs.valueQuantity.value} ${obs.valueQuantity.unit}` : obs.valueString ?? 'N/A'}
-          </Typography>
+
+          {obs.valueQuantity ? (
+            <Typography>Value: {obs.valueQuantity.value} {obs.valueQuantity.unit}</Typography>
+          ) : obs.valueString ? (
+            <Typography>Value: {obs.valueString}</Typography>
+          ) : null}
+
+          {obs.component && obs.component.length > 0 && (
+            <>
+              <Typography variant="subtitle2">Components:</Typography>
+              {obs.component.map((comp, j) => (
+                <Typography key={j} sx={{ ml: 2 }}>
+                  {comp.code?.text || 'Component'}:{" "}
+                  {comp.valueQuantity
+                    ? `${comp.valueQuantity.value} ${comp.valueQuantity.unit}`
+                    : comp.valueString ?? 'N/A'}
+                </Typography>
+              ))}
+            </>
+          )}
+
           <Typography variant="caption">
             Date: {new Date(obs.effectiveDateTime).toLocaleDateString()}
           </Typography>
+
         </CardContent>
       </Card>
     ));
@@ -147,12 +129,14 @@ export default function App() {
   };
 
   return (
-    <Container sx={{marginTop:-2}}>
-     <Box sx={{ width: '100%', backgroundColor: '#0073e0' ,padding: 3, color:'white',
-      borderRadius: 1, margin:-3}}>
-       <Typography variant="h4" gutterBottom>FHIR Patient Viewer</Typography>
+    <Container sx={{ marginTop: -2 }}>
+      <Box sx={{
+        width: '100%', backgroundColor: '#0073e0', padding: 3, color: 'white',
+        borderRadius: 1, margin: -3
+      }}>
+        <Typography variant="h4" gutterBottom>FHIR Patient Viewer</Typography>
       </Box>
-      <Box sx={{ mb: 3, display: 'flex', gap: 2, paddingTop:5 }}>
+      <Box sx={{ mb: 3, display: 'flex', gap: 2, paddingTop: 5 }}>
         <TextField
           label="Search by name or ID"
           variant="outlined"
@@ -174,19 +158,19 @@ export default function App() {
             sx={{
               cursor: 'pointer',
               bgcolor: selectedPatient === p.id ? 'action.selected' : 'inherit',
-              '&:hover': { bgcolor:  '#78E2DA'}
+              '&:hover': { bgcolor: '#78E2DA' }
             }}
           >
-            <ListItemText 
-              
+            <ListItemText
+
               primary={`${p.name?.[0]?.given?.join(' ') ?? ''} ${p.name?.[0]?.family ?? ''}`}
               secondary={
                 <>
                   <Typography variant="body2">
-                     Gender: {p.gender ?? 'N/A'} | DOB: {p.birthDate ?? 'N/A'}
+                    Gender: {p.gender ?? 'N/A'} | DOB: {p.birthDate ?? 'N/A'}
                   </Typography>
-                   <Typography variant="body2">
-                     Email: {p.telecom?.[1]?.value ?? 'N/A'}
+                  <Typography variant="body2">
+                    Email: {p.telecom?.[1]?.value ?? 'N/A'}
                   </Typography>
                 </>
 
@@ -198,7 +182,7 @@ export default function App() {
         ))}
       </List>
 
-      <Grid container spacing={2} sx={{marginTop:2}}>
+      <Grid container spacing={2} sx={{ marginTop: 2 }}>
         <Grid item xs={12} md={4}>
           <Card sx={{ bgcolor: '#308229' }}>
             <CardContent>
