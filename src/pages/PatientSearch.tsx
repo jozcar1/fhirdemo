@@ -39,7 +39,7 @@ const PatientSearch = () => {
         }
     };
     return (
-        <Container >
+        <Container sx={{ marginTop: -2 }}>
             <Box sx={{ mb: 3, display: 'flex', gap: 2, paddingTop: 5 }}>
                 <TextField
                     label="Search by name or ID"
