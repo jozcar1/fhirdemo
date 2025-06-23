@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { AppBar, Toolbar, Typography, Button, IconButton, Drawer, List, ListItem, ListItemText, Box, Container, useMediaQuery } from "@mui/material";
+import { AppBar, Toolbar,  Button, IconButton, Drawer, List, ListItem, ListItemText, Box, Container, useMediaQuery, ListItemButton } from "@mui/material";
 import { styled } from "@mui/system";
 import { FiMenu } from "react-icons/fi";
 import { useTheme } from "@mui/material/styles";
@@ -61,17 +61,19 @@ const Header = () => {
     setMobileOpen(!mobileOpen);
   };
 
-  const drawer = (
-    <Box onClick={handleDrawerToggle} sx={{ textAlign: "center" }}>
-      <List>
-        {menuItems.map((item) => (
-          <ListItem key={item.page} button>
+const drawer = (
+  <Box onClick={handleDrawerToggle} sx={{ textAlign: "center" }}>
+    <List>
+      {menuItems.map((item) => (
+        <ListItem key={item.page} disablePadding>
+          <ListItemButton>
             <ListItemText primary={item.page} />
-          </ListItem>
-        ))}
-      </List>
-    </Box>
-  );
+          </ListItemButton>
+        </ListItem>
+      ))}
+    </List>
+  </Box>
+);
 
   return (
     <React.Fragment>
