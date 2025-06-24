@@ -53,6 +53,7 @@ const Header = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const MenuIcon = FiMenu as unknown as React.FC<React.SVGProps<SVGSVGElement>>;
 
 
     const menuItems = [{page: "Home", url: ""},{page:"Patient Search",url: "PatientSearch" },{page: "Add Resources",url:"AddResources"},{page: "About",url:"About"}]
@@ -96,7 +97,7 @@ const drawer = (
                 onClick={handleDrawerToggle}
                 sx={{ ml: "auto", color: "#333333" }}
               >
-                <FiMenu />
+                <MenuIcon />
               </IconButton>
             ) : (
               <>
