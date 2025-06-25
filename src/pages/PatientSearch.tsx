@@ -1,21 +1,38 @@
 import {
-    Box, Button, Container,TextField, Typography, Table,
+    Box, Button, Container, TextField, Typography, Table,
     TableHead,
     TableBody,
     TableRow,
     TableCell,
     TableContainer,
-    Paper
+    Paper,
+    Tab,
+    Modal,
+    IconButton,
+    CircularProgress
 } from "@mui/material";
 import { useState } from "react";
 import { Patient } from "../types/patient/patient";
 import { client } from "fhirclient";
+import { Close } from "@mui/icons-material";
 const fhirClient = client({ serverUrl: 'https://server.fire.ly' });
 
 const PatientSearch = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(false);
     const [patients, setPatients] = useState<Patient[]>([]);
+    const [open, setOpen] = useState(false);
+    const [selectedResource, setSelectedResource] = useState<any>(null);
+
+    const handleClick = (index: number) => {
+        setSelectedResource(patients[index]);
+        setOpen(true);
+    }
+
+    const handleClose = () => {
+        setOpen(false);
+        setSelectedResource(null);
+    }
 
     const handleSearch = async () => {
         try {
@@ -52,7 +69,7 @@ const PatientSearch = () => {
                 <Button variant="contained" onClick={handleSearch} disabled={!searchQuery}>Search</Button>
                 <Button variant="outlined" onClick={() => { setSearchQuery(''); setPatients([]); }}>Clear</Button>
             </Box>
-
+           { loading ? <CircularProgress/> : '' }
             {patients.length > 0 ? (<>
                 <Typography variant="h5" gutterBottom>Patients</Typography>
                 <TableContainer component={Paper} elevation={3}>
@@ -63,6 +80,7 @@ const PatientSearch = () => {
                                 <TableCell><strong>Gender</strong></TableCell>
                                 <TableCell><strong>Date of Birth</strong></TableCell>
                                 <TableCell><strong>Email</strong></TableCell>
+                                <TableCell><strong>FHIR Resource</strong></TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -83,23 +101,45 @@ const PatientSearch = () => {
                                     <TableCell>{p.gender ?? 'N/A'}</TableCell>
                                     <TableCell>{p.birthDate ?? 'N/A'}</TableCell>
                                     <TableCell>{p.telecom?.[1]?.value ?? 'N/A'}</TableCell>
+                                    <TableCell><Button key={index} onClick={() => handleClick(index)}>View</Button></TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
                     </Table>
-
-
+                    <Modal open={open} onClose={handleClose}>
+                        <Box
+                            sx={{
+                                position: 'absolute',
+                                top: '50%',
+                                left: '50%',
+                                transform: 'translate(-50%, -50%)',
+                                width: '80%',
+                                maxHeight: '80%',
+                                bgcolor: 'background.paper',
+                                boxShadow: 24,
+                                p: 4,
+                                overflowY: 'auto',
+                                borderRadius: 2,
+                            }}
+                        >
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                <Typography variant="h6">FHIR Resource JSON</Typography>
+                                <IconButton onClick={handleClose}>
+                                    <Close />
+                                </IconButton>
+                            </Box>
+                            <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                                {selectedResource ? JSON.stringify(selectedResource, null, 2) : ''}
+                            </pre>
+                        </Box>
+                    </Modal>
                 </TableContainer>
 
-
             </>
-
 
             ) : ""
 
             }
-
-
         </Container>
     )
 
