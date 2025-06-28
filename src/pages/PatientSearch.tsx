@@ -12,17 +12,17 @@ import {
     CircularProgress
 } from "@mui/material";
 import { useState } from "react";
-import { Patient } from "../types/patient/patient";
-import { client } from "fhirclient";
 import { Close } from "@mui/icons-material";
-const fhirClient = client({ serverUrl: 'https://server.fire.ly' });
+import { useNavigate } from 'react-router-dom';
+import { usePatientSearch } from "../hooks/usePatientSearch";
+
 
 const PatientSearch = () => {
-    const [searchQuery, setSearchQuery] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [patients, setPatients] = useState<Patient[]>([]);
+    const [searchQuery, setSearchQuery] = useState<string>('');
+   const { patients,loading,error,handleSearch,clear} = usePatientSearch();
     const [open, setOpen] = useState(false);
     const [selectedResource, setSelectedResource] = useState<any>(null);
+    const navigate = useNavigate();
 
     const handleClick = (index: number) => {
         setSelectedResource(patients[index]);
@@ -33,28 +33,11 @@ const PatientSearch = () => {
         setOpen(false);
         setSelectedResource(null);
     }
+    const handleRowClick = (patientId: string) => {
+        navigate(`/patientDetail/${patientId}`);
+    }
 
-    const handleSearch = async () => {
-        try {
-            setLoading(true);
-            const isLettersOnly = /^[A-Za-z\s]+$/.test(searchQuery);
-            const parts = searchQuery.trim().split(/\s+/);
-            let searchParam;
-            if (isLettersOnly) {
-                const given = parts[0];
-                const family = parts[1];
-                searchParam = `given=${given}` + (family ? `&family=${family}` : '');
-            } else {
-                searchParam = `id=${parts[0]}`;
-            }
-            const res = await fhirClient.request(`Patient?_count=10&${searchParam}`);
-            setPatients(res.entry?.map((e: any) => e.resource) || []);
-        } catch (err) {
-            console.error('Search error:', err);
-        } finally {
-            setLoading(false);
-        }
-    };
+ 
     return (
         <Container sx={{ marginTop: -2 }}>
             <Box sx={{ mb: 3, display: 'flex', gap: 2, paddingTop: 5 }}>
@@ -66,8 +49,8 @@ const PatientSearch = () => {
                     size="small"
                     fullWidth
                 />
-                <Button variant="contained" onClick={handleSearch} disabled={!searchQuery}>Search</Button>
-                <Button variant="outlined" onClick={() => { setSearchQuery(''); setPatients([]); }}>Clear</Button>
+                <Button variant="contained" onClick={ () => handleSearch(searchQuery)} disabled={!searchQuery}>Search</Button>
+                <Button variant="outlined" onClick={() => { setSearchQuery(''); clear(); }}>Clear</Button>
             </Box>
            { loading ? <CircularProgress/> : '' }
             {patients.length > 0 ? (<>
@@ -87,6 +70,7 @@ const PatientSearch = () => {
                             {patients.map((p, index) => (
                                 <TableRow
                                     key={p.id}
+                                    onClick ={()=> handleRowClick(p.id)}
                                     sx={{
                                         backgroundColor: index % 2 === 0 ? '#E0F7F5' : '#FFFFFF',
                                         '&:hover': {
@@ -101,7 +85,7 @@ const PatientSearch = () => {
                                     <TableCell>{p.gender ?? 'N/A'}</TableCell>
                                     <TableCell>{p.birthDate ?? 'N/A'}</TableCell>
                                     <TableCell>{p.telecom?.[1]?.value ?? 'N/A'}</TableCell>
-                                    <TableCell><Button key={index} onClick={() => handleClick(index)}>View</Button></TableCell>
+                                    <TableCell><Button key={index} onClick={(e) =>{ e.stopPropagation(); handleClick(index)} }>View</Button></TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
