@@ -1,5 +1,7 @@
 // src/services/fhirService.ts
 import { client } from "fhirclient";
+import { normalizeFHIRResponse } from "../utils/fhirUtils";
+import { Patient } from "../types/patient/patient";
 const fhirClient = client({ serverUrl: 'https://server.fire.ly' });
 
 export const searchPatients = async (searchQuery: string): Promise<any[]> => {
@@ -10,11 +12,12 @@ export const searchPatients = async (searchQuery: string): Promise<any[]> => {
   if (isLettersOnly) {
     const given = parts[0];
     const family = parts[1];
-    searchParam = `given=${given}` + (family ? `&family=${family}` : '');
+    searchParam = `?_count=10&given=${given}` + (family ? `&family=${family}` : '');
   } else {
-    searchParam = `id=${parts[0]}`;
+    searchParam = `/${parts[0]}`;
   }
 
-  const res = await fhirClient.request(`Patient?_count=10&${searchParam}`);
-  return res.entry?.map((e: any) => e.resource) || [];
+  const res = await fhirClient.request(`Patient${searchParam}`);
+ return normalizeFHIRResponse<Patient>(res);
+
 };

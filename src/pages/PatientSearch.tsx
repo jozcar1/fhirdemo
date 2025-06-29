@@ -19,7 +19,7 @@ import { usePatientSearch } from "../hooks/usePatientSearch";
 
 const PatientSearch = () => {
     const [searchQuery, setSearchQuery] = useState<string>('');
-   const { patients,loading,error,handleSearch,clear} = usePatientSearch();
+    const { patients,loading,error,handleSearch,clear} = usePatientSearch();
     const [open, setOpen] = useState(false);
     const [selectedResource, setSelectedResource] = useState<any>(null);
     const navigate = useNavigate();
@@ -39,7 +39,7 @@ const PatientSearch = () => {
 
  
     return (
-        <Container sx={{ marginTop: -2 }}>
+        <Container sx={{ marginTop: 2 }}>
             <Box sx={{ mb: 3, display: 'flex', gap: 2, paddingTop: 5 }}>
                 <TextField
                     label="Search by name or ID"

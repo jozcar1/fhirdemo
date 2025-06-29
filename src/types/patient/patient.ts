@@ -11,8 +11,18 @@ interface ContactPoint {
   }
 }
 export interface Patient extends FHIRResource {
-  name: Array<{ given?: string[]; family?: string }>;
+  name: Array<{
+    given?: string[];
+    family?: string
+  }>;
   gender?: string;
   birthDate?: string;
-  telecom?: ContactPoint[]
+  telecom?: ContactPoint[];
+  address?: Array<{
+    line?: string[];
+    city?: string;
+    state?: string;
+    postalCode?:string;
+    country?:string;
+  }>
 }
