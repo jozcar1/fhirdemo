@@ -25,6 +25,7 @@
     "@emotion/styled": "^11.14.0",
     "@mui/icons-material": "^6.4.4",
     "@mui/material": "^6.4.4",
+    "@vercel/analytics": "^1.5.0",
     "fhir.js": "^0.0.22",
     "fhirclient": "^2.5.4",
     "react-icons": "^5.5.0",
