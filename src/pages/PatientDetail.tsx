@@ -8,7 +8,7 @@ import PatientTabs from "../component/Header/PatientTabs";
 
 const PatientDetail = () => {
     const { patients, loading, error, handleSearch, clear } = usePatientSearch();
-    const { id } = useParams<{ id: string }>();
+    const { id } = useParams<{ id: string  }>();
     useEffect(() => {
         if (id) {
             handleSearch(id);
@@ -29,7 +29,7 @@ const PatientDetail = () => {
                 </Typography>
                 <Divider sx={{ mt: 2 }} />
 
-                <PatientTabs />
+                <PatientTabs id={id} />
 
             </Box>
         </>

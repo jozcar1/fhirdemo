@@ -3,9 +3,15 @@ import { Box, ListItemIcon, ListItemText, Menu, MenuItem, Tab, Tabs, Typography 
 import MedicationIcon from "@mui/icons-material/Medication";
 import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
 import VaccinesIcon from "@mui/icons-material/Vaccines";
+import Observation from "../Observations";
+
+type PatientTabsProps = {
+    id?: string;
+}
 
 
-const PatientTabs = () => {
+const PatientTabs = ({id}: PatientTabsProps) => {
+    
     const [tabIndex, setTabIndex] = useState(0);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [selectedMoreResource, setselectedMoreResource] = useState<string | null>(null);
@@ -58,8 +64,8 @@ const PatientTabs = () => {
             </Menu>
 
             <Box sx={{ mt: 2 }}>
-                {tabIndex === 0 && <Typography variant="h6">vitals Content</Typography>}
-                {tabIndex === 1 && <Typography variant="h6">Labs Content</Typography>}
+                {tabIndex === 0 && <Typography variant="h6"><Observation type="Vital Signs" patientID={id}/></Typography>}
+                {tabIndex === 1 && <Typography variant="h6"><Observation type="Lab" patientID={id}/></Typography>}
                 {tabIndex === 2 && selectedMoreResource && (
                     <Typography variant="h6">
                         Displaying resource: {selectedMoreResource}

@@ -21,3 +21,14 @@ export const searchPatients = async (searchQuery: string): Promise<any[]> => {
  return normalizeFHIRResponse<Patient>(res);
 
 };
+
+export const fetchResource = async <T>(url:string): Promise<T[]> => {
+  try{
+    const res = await fhirClient.request(url);
+    return normalizeFHIRResponse<T>(res);
+
+  } catch(err){
+    return [];
+  }
+}
+
