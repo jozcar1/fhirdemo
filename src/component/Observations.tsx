@@ -14,6 +14,12 @@ const dynamicTypeToCategoryMap = {
   Imaging: "imaging"
 } as const 
 
+const observationDisplayConfig = {
+  Lab: "Lab Test",
+  "Vital Signs": "Vital Signs",
+  Imaging: "Imaging Study"
+} as const;
+
 type ResourceType = keyof typeof dynamicTypeToCategoryMap;
 type ObservationCategory = (typeof dynamicTypeToCategoryMap)[ResourceType]
 
@@ -22,7 +28,13 @@ function getObservationCategory(type: ResourceType) : ObservationCategory | unde
 }
 
 
+function getObservationLabel(type: ResourceType) : string {
+  return observationDisplayConfig[type] ?? "Observation";
+}
+
+
 const Observations = ({ type, patientID }: ObservationProps) => {
+  
   const { handleSearch, resources } = useResourceSearch<Observation>();
   const getCategory = (type: "Lab" | "Vital Signs") => getObservationCategory(type);
 
@@ -34,7 +46,7 @@ const Observations = ({ type, patientID }: ObservationProps) => {
   }, [patientID])
   return (
     <>
-      <ObservationTable observations={resources} />
+      <ObservationTable observations={resources} label={getObservationLabel(type)} />
     </>
   )
 }
