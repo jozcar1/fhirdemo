@@ -32,7 +32,6 @@ function getObservationLabel(type: ResourceType) : string {
   return observationDisplayConfig[type] ?? "Observation";
 }
 
-
 const Observations = ({ type, patientID }: ObservationProps) => {
   
   const { handleSearch, resources } = useResourceSearch<Observation>();
