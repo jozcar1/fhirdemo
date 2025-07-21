@@ -18,13 +18,9 @@ const Sidebar = ({
     expanded,
     setExpanded,
     selectedResource,
-    //onSelectedResource
+    onSelectResource
 }: SidebarProps) => {
-
-    //const [filter, setFilter] = useState('');
-    //const [expanded, setExpanded] = useState<string | false>(false);
-    //const [selectedResource, setSelectedResource] = useState<string>('Patient');
-
+    
     const filterResources = () => {
         const searchTerm = filter.toLocaleLowerCase();
         const result: Record<string, string[]> = {};
@@ -42,10 +38,7 @@ const Sidebar = ({
     const handleAccordionChange = (category: string) => (_event: React.SyntheticEvent, isExpanded: boolean) => {
        setExpanded(isExpanded ? category : false)
     }
-    const handleResourceClick = (resource:string) => {
-         // setSelectedResource(resource);
-        //alert(resource);
-    }
+   
     const filteredData = filterResources();
 
     return (
@@ -83,7 +76,7 @@ const Sidebar = ({
                                 <ListItem key={resource} disablePadding>
                                     <ListItemButton
                                     selected={resource === selectedResource}
-                                    onClick={()=> handleResourceClick(resource)}
+                                    onClick={()=> onSelectResource(resource)}
                                     >
                                         <Typography>{resource}</Typography>
                                     </ListItemButton>

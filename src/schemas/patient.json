@@ -1,0 +1,134 @@
+{
+  "resourceType": "Patient",
+  "id": "example-123",
+  "identifier": [
+    {
+      "use": "usual",
+      "type": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+            "code": "MR",
+            "display": "Medical Record Number"
+          }
+        ]
+      },
+      "system": "http://hospital.smarthealth.org/mrn",
+      "value": "123456789",
+      "assigner": {
+        "display": "General Hospital"
+      }
+    }
+  ],
+  "active": true,
+  "name": [
+    {
+      "use": "official",
+      "family": "Brady",
+      "given": ["Thomas", "Edward"],
+      "prefix": ["Mr."],
+      "suffix": ["Jr."]
+    }
+  ],
+  "telecom": [
+    {
+      "system": "phone",
+      "value": "+1-617-555-0199",
+      "use": "home"
+    },
+    {
+      "system": "email",
+      "value": "tom.brady@example.com",
+      "use": "work"
+    }
+  ],
+  "gender": "male",
+  "birthDate": "1977-08-03",
+  "deceasedBoolean": false,
+  "address": [
+    {
+      "use": "home",
+      "type": "both",
+      "line": ["123 Victory Ave", "Apt 12B"],
+      "city": "Foxborough",
+      "district": "Norfolk",
+      "state": "MA",
+      "postalCode": "02035",
+      "country": "USA"
+    }
+  ],
+  "maritalStatus": {
+    "coding": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/v3-MaritalStatus",
+        "code": "M",
+        "display": "Married"
+      }
+    ]
+  },
+  "multipleBirthBoolean": false,
+  "photo": [
+    {
+      "contentType": "image/jpeg",
+      "url": "http://example.org/photos/tom.jpg"
+    }
+  ],
+  "contact": [
+    {
+      "relationship": [
+        {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v2-0131",
+              "code": "E",
+              "display": "Emergency"
+            }
+          ]
+        }
+      ],
+      "name": {
+        "family": "Brady",
+        "given": ["Gisele"]
+      },
+      "telecom": [
+        {
+          "system": "phone",
+          "value": "+1-617-555-0200",
+          "use": "mobile"
+        }
+      ],
+      "address": {
+        "line": ["123 Victory Ave"],
+        "city": "Foxborough",
+        "state": "MA",
+        "postalCode": "02035",
+        "country": "USA"
+      },
+      "gender": "female"
+    }
+  ],
+  "communication": [
+    {
+      "language": {
+        "coding": [
+          {
+            "system": "urn:ietf:bcp:47",
+            "code": "en",
+            "display": "English"
+          }
+        ]
+      },
+      "preferred": true
+    }
+  ],
+  "generalPractitioner": [
+    {
+      "reference": "Practitioner/example",
+      "display": "Dr. Meredith Grey"
+    }
+  ],
+  "managingOrganization": {
+    "reference": "Organization/example",
+    "display": "General Hospital"
+  }
+}
